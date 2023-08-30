@@ -1,7 +1,10 @@
 
+import { queryClient } from '@/components/Provider';
 import { AppRouter } from '@/server/api/root';
-import { httpBatchLink, loggerLink } from '@trpc/client';
+import { httpBatchLink, httpLink, loggerLink } from '@trpc/client';
 import { createTRPCNext } from '@trpc/next';
+import { createTRPCReact } from '@trpc/react-query';
+import { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
 function getBaseUrl() {
   if (typeof window !== 'undefined')
@@ -21,6 +24,14 @@ function getBaseUrl() {
 }
 
 export const api = createTRPCNext<AppRouter>({
+  // overrides: {
+  //   useMutation: {
+  //     onSuccess: async (opt) => {
+  //       await opt.originalFn()
+  //       await opt.queryClient.invalidateQueries()
+  //     }
+  //   }
+  // },
   config(opts) {
     return {
       links: [
@@ -30,7 +41,7 @@ export const api = createTRPCNext<AppRouter>({
            * @link https://trpc.io/docs/ssr
            **/
           url: `${getBaseUrl()}/api/trpc`,
-
+          // maxURLLength: 2083, // 限制 413 Payload Too Large、414 URI Too Long和404 Not Found
           // You can pass any HTTP headers you wish here
           async headers() {
             return {
@@ -39,6 +50,7 @@ export const api = createTRPCNext<AppRouter>({
           },
         }),
       ],
+      queryClient
     };
   },
   /**
@@ -46,3 +58,17 @@ export const api = createTRPCNext<AppRouter>({
    **/
   ssr: false,
 });
+
+/**
+ * Inference helper for inputs.
+ *
+ * @example type HelloInput = RouterInputs['example']['hello']
+ */
+export type RouterInputs = inferRouterInputs<AppRouter>;
+
+/**
+ * Inference helper for outputs.
+ *
+ * @example type HelloOutput = RouterOutputs['example']['hello']
+ */
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
