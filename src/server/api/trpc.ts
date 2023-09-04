@@ -4,7 +4,7 @@ import { CreateNextContextOptions } from '@trpc/server/adapters/next';
 import { ZodError } from 'zod';
 
 
-export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+export const createTRPCContext = async () => {
 
   return {
     prisma

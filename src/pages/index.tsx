@@ -1,10 +1,23 @@
 import { PostForm } from "@/components/PostForm";
 import { api } from "@/utils/api";
+import { GetServerSidePropsContext } from "next";
+import { useRouter } from "next/router";
 import { AiFillDelete } from "react-icons/ai";
+import { IoIosArchive } from "react-icons/io";
 
 export default function Home() {
+  const router = useRouter()
   const utils = api.useContext()
-  const { data: posts, isLoading, isError, error } = api.posts.getPosts.useQuery()
+  const { data: posts, isLoading, isError, error } = api.posts.getPosts.useQuery(undefined, {
+    trpc: {
+      context: {
+        skipBatch: true,
+      }
+    }
+  })
+  const { data: greetingdata } = api.greeting.useQuery({ name: 'Danny' })
+
+
   const { mutateAsync: togglePost } = api.posts.togglePostPublish.useMutation({
     onSuccess: () => {
       utils.posts.invalidate()
@@ -24,7 +37,10 @@ export default function Home() {
         <PostForm />
         <ul className="flex flex-col gap-[1rem] justify-center mt-5">
           {posts.map((post, index) => (
-            <li key={post.id} className="flex items-center justify-between">
+            <li
+              key={post.id}
+              className="flex items-center justify-between cursor-pointer"
+            >
               <label
                 htmlFor=""
                 className={`
@@ -35,14 +51,19 @@ export default function Home() {
                   await togglePost({ id: post.id, published: !post.published })
                 }}
               >{post.title}</label>
-              <AiFillDelete
-                color="red"
-                className="cursor-pointer"
-                size={20}
-                onClick={async () => {
-                  await deletePost({ id: post.id })
-                }}
-              />
+              <div className="flex items-center gap-[1rem]">
+                <AiFillDelete
+                  color="red"
+                  className="cursor-pointer"
+                  size={20}
+                  onClick={async () => {
+                    await deletePost({ id: post.id })
+                  }}
+                />
+                <IoIosArchive
+                  onClick={() => router.push(`/posts/${post.id}`)}
+                />
+              </div>
             </li>
           ))}
         </ul>

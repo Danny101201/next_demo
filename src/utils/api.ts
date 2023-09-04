@@ -1,7 +1,7 @@
 
 import { queryClient } from '@/components/Provider';
 import { AppRouter } from '@/server/api/root';
-import { httpBatchLink, httpLink, loggerLink } from '@trpc/client';
+import { httpBatchLink, httpLink, loggerLink, splitLink } from '@trpc/client';
 import { createTRPCNext } from '@trpc/next';
 import { createTRPCReact } from '@trpc/react-query';
 import { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
@@ -22,7 +22,7 @@ function getBaseUrl() {
   // assume localhost
   return `http://localhost:${process.env.PORT ?? 3000}`;
 }
-
+const url = `${getBaseUrl()}/api/trpc`
 export const api = createTRPCNext<AppRouter>({
   // overrides: {
   //   useMutation: {
@@ -35,19 +35,46 @@ export const api = createTRPCNext<AppRouter>({
   config(opts) {
     return {
       links: [
-        httpBatchLink({
-          /**
-           * If you want to use SSR, you need to use the server's full URL
-           * @link https://trpc.io/docs/ssr
-           **/
-          url: `${getBaseUrl()}/api/trpc`,
-          // maxURLLength: 2083, // 限制 413 Payload Too Large、414 URI Too Long和404 Not Found
-          // You can pass any HTTP headers you wish here
-          async headers() {
-            return {
-              // authorization: getAuthCookie(),
-            };
+        loggerLink({
+          enabled: (opts) =>
+            (process.env.NODE_ENV === 'development' &&
+              typeof window !== 'undefined') ||
+            (opts.direction === 'down' && opts.result instanceof Error),
+        }),
+        splitLink({
+          condition(op) {
+            // check for context property `skipBatch`
+            return op.context.skipBatch === true;
           },
+          // when condition is true, use normal request
+          true: httpLink({
+            /**
+             * If you want to use SSR, you need to use the server's full URL
+             * @link https://trpc.io/docs/ssr
+             **/
+            url: `${getBaseUrl()}/api/trpc`,
+            // You can pass any HTTP headers you wish here
+            async headers() {
+              return {
+                // authorization: getAuthCookie(),
+              };
+            }
+          }),
+          // when condition is false, use batching
+          false: httpBatchLink({
+            /**
+             * If you want to use SSR, you need to use the server's full URL
+             * @link https://trpc.io/docs/ssr
+             **/
+            url: `${getBaseUrl()}/api/trpc`,
+            async headers() {
+              return {
+                // authorization: getAuthCookie(),
+              };
+            },
+            // maxURLLength: 2083, // 限制 413 Payload Too Large、414 URI Too Long和404 Not Found
+            maxURLLength: 2083
+          }),
         }),
       ],
       queryClient
@@ -56,7 +83,7 @@ export const api = createTRPCNext<AppRouter>({
   /**
    * @link https://trpc.io/docs/ssr
    **/
-  ssr: false,
+  ssr: true,
 });
 
 /**
