@@ -60,7 +60,7 @@ export const PostForm = ({ updateSuccessCallBack }: PostFormProps) => {
           label='Title'
           register={register}
           id='title'
-          disable={false}
+          disabled={false}
           required
           error={errors.title}
         />
@@ -68,7 +68,7 @@ export const PostForm = ({ updateSuccessCallBack }: PostFormProps) => {
           label='content'
           register={register}
           id='content'
-          disable={false}
+          disabled={false}
           error={errors.content}
         />
         <Button type='submit' disabled={false} fullWidth>submit</Button>

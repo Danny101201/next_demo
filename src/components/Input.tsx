@@ -9,14 +9,14 @@ interface InputProps<TForm extends FieldValues> extends ComponentProps<'input'> 
   error: FieldError | undefined,
   type?: HTMLInputTypeAttribute
   require?: boolean
-  disable?: boolean
+  disabled?: boolean
 }
 export const Input = <TForm extends FieldValues>({
   register,
   id,
   label,
   error,
-  disable,
+  disabled,
   require,
   type = 'text',
   ...rest }: InputProps<TForm>) => {
@@ -58,7 +58,7 @@ export const Input = <TForm extends FieldValues>({
             focus:ring-inset 
             sm:text-sm 
             sm:leading-6`,
-            disable && 'opacity-50 cursor-default',
+            disabled && 'opacity-50 cursor-default',
             error?.message ? ' focus:ring-rose-500' : 'focus:ring-sky-500',
           )}
           {...register(id)}

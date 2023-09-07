@@ -1,0 +1,1 @@
+type VARIANTS = 'Login' | 'Register'

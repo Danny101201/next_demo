@@ -1,4 +1,8 @@
+import { DebounceInput } from "@/components/DebounceInput";
 import { PostForm } from "@/components/PostForm";
+import { SearchInput } from "@/components/SearchInput";
+
+
 import { api } from "@/utils/api";
 import { Prisma, Post } from "@prisma/client";
 import { GetServerSidePropsContext } from "next";
@@ -9,7 +13,7 @@ import { IoIosArchive } from "react-icons/io";
 import { useInView } from 'react-intersection-observer';
 
 export default function Home() {
-  const [filterTitle, setFilterTitle] = useState<string>('')
+  const [filterValue, setFilterValue] = useState<string>('')
   const router = useRouter()
   const bottomOfPanelRef = useRef<HTMLDivElement | null>(null)
   const scrollToBottom = () => {
@@ -34,17 +38,14 @@ export default function Home() {
       limit: 10,
     },
     {
-      getNextPageParam: (lastPage) => {
-        console.log(lastPage)
-        return lastPage.nextCursor
-      },
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
       select: (data) => {
         const checkColumns: (keyof Post)[] = ['title']
         return {
           ...data,
           pages: data.pages.map(page => ({
             ...page,
-            posts: page.posts.filter(post => checkColumns.some(k => String(post[k]).toLowerCase().includes(filterTitle.toLowerCase())))
+            posts: page.posts.filter(post => checkColumns.some(k => String(post[k]).toLowerCase().includes(filterValue.toLowerCase())))
           }))
         }
       }
@@ -67,20 +68,17 @@ export default function Home() {
       utils.posts.invalidate()
     }
   })
+  const handelSearchText = (value: string) => {
+    setFilterValue(value)
+    // console.log(value)
+  }
   if (isError) return error.message
   return (
     <div className="bg-gray-100 min-h-screen overflow-y-auto p-4">
       <h2 className="text-center text-3xl">Create posts</h2>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md flex flex-col gap-[2rem]">
         <PostForm updateSuccessCallBack={scrollToBottom} />
-        <div className="p-2 border-2 ">
-          <input
-            className="outline-none border-none  "
-            type="text"
-            onChange={e => setFilterTitle(e.target.value)}
-            value={filterTitle}
-          />
-        </div>
+        <SearchInput value={filterValue} onChange={handelSearchText} />
         <div className="max-h-[300px] overflow-y-scroll" ref={bottomOfPanelRef}>
           <ul className="flex flex-col gap-[1rem] justify-center mt-5" >
             {posts.map((post, index) => (
