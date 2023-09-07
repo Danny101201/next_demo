@@ -7,13 +7,21 @@ import { Input } from './Input'
 import { Button } from './Button'
 import { TRPCClientError } from '@trpc/client'
 import { queryClient } from './Provider'
+import { date } from 'zod'
 
-export const PostForm = () => {
+interface PostFormProps {
+  updateSuccessCallBack?: () => void
+}
+export const PostForm = ({ updateSuccessCallBack }: PostFormProps) => {
   const utils = api.useContext()
   const { mutateAsync: createPost } = api.posts.addPost.useMutation({
-    onSuccess: () => {
-      utils.posts.getPosts.invalidate()
+    onSuccess: ({ post: newPost }) => {
+      // utils.posts.getPosts.invalidate()
+      utils.posts.infinitePosts.refetch()
       console.log('onSuccess')
+      if (updateSuccessCallBack) {
+        updateSuccessCallBack()
+      }
     },
     onError: (e) => {
       if (e instanceof TRPCClientError) {

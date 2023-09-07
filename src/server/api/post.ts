@@ -1,14 +1,47 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
+
 import {
   getPostSchema,
   createPostSchema,
   togglePostPuPublishedSchema,
-  deletePostSchema
+  deletePostSchema,
+  getInfinitePostSchema
 } from "@/validate/api/post";
 
 export const postsRouter = router({
+  infinitePosts: publicProcedure
+    .input(getInfinitePostSchema)
+    .query(async ({ input, ctx }) => {
+      const { cursor, where } = input
+      const { prisma } = ctx
+      const limit = input.limit ?? 50
+      const posts = await prisma.post.findMany({
+        where: {
+          title: {
+            contains: where?.title
+          },
+          content: {
+            contains: where?.content
+          },
+        },
+        orderBy: {
+          id: 'desc'
+        },
+        take: limit + 1,
+        cursor: cursor ? { id: cursor } : undefined
+      })
+      let nextCursor: number | undefined
+      if (posts.length >= limit) {
+        nextCursor = posts.pop()?.id
+      }
+
+      return {
+        posts,
+        nextCursor
+      }
+    }),
   getPosts: publicProcedure
     .query(async ({ ctx }) => {
       const { prisma } = ctx
@@ -42,14 +75,11 @@ export const postsRouter = router({
       if (duplicatePost) {
         throw new TRPCError({ code: 'CONFLICT', message: 'Title already exists' })
       }
-      const { id: postId } = await prisma.post.create({
+      const newPost = await prisma.post.create({
         data: input,
-        select: {
-          id: true
-        }
       })
 
-      return { message: 'success create post', id: postId }
+      return { message: 'success create post', post: newPost }
     }),
   togglePostPublish: publicProcedure
     .input(togglePostPuPublishedSchema)

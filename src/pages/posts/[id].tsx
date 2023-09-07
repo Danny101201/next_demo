@@ -25,7 +25,7 @@ const PostDetail = ({ id }: PostDetailProps) => {
       <p>title : {post.title}</p>
       <p>id : {post.id}</p>
       <p>content : {post.content}</p>
-      <button onClick={() => router.push('/')}>back to home</button>
+      <button onClick={() => router.push('/posts')}>back to home</button>
     </>
   )
 }
@@ -40,12 +40,11 @@ export async function getServerSideProps(
   });
   // const id = context.params?.id as string;
   const id = context.params?.id as string
-
   await helpers.posts.getPost.prefetch({ post_id: id })
 
   return {
     props: {
-      trpcState: helpers.dehydrate(),
+      trpcState: JSON.parse(JSON.stringify(helpers.dehydrate())),
       id,
     }
   };

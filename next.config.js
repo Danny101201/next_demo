@@ -7,7 +7,7 @@ const nextConfig = {
         hostname: 'picsum.photos',
       },
     ],
-  }
+  },
 }
 
 module.exports = nextConfig
