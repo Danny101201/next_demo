@@ -1,6 +1,8 @@
 import { AuthForm } from '@/components/AuthForm'
+import { getServerSession } from 'next-auth'
 import Image from 'next/image'
 import React, { useState } from 'react'
+import { authOptions } from './api/auth/[...nextauth]'
 
 function AuthPage() {
   const [variants, setVariants] = useState<VARIANTS>('Login')

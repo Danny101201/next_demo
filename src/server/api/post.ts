@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "./trpc";
+import { protectProcedure, publicProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 
 import {
@@ -9,28 +9,39 @@ import {
   deletePostSchema,
   getInfinitePostSchema
 } from "@/validate/api/post";
+import { Prisma } from "@prisma/client";
 
 export const postsRouter = router({
-  infinitePosts: publicProcedure
+  infinitePosts: protectProcedure
     .input(getInfinitePostSchema)
     .query(async ({ input, ctx }) => {
       const { cursor, where } = input
       const { prisma } = ctx
       const limit = input.limit ?? 50
+      const whereClause = Prisma.validator<Prisma.PostWhereInput>()({
+        OR: [
+          {
+            title: {
+              contains: where?.title
+            }
+          },
+          {
+            content: {
+              contains: where?.content
+            }
+          }
+        ]
+      })
       const posts = await prisma.post.findMany({
-        where: {
-          title: {
-            contains: where?.title
-          },
-          content: {
-            contains: where?.content
-          },
-        },
+        where: where ? whereClause : undefined,
         orderBy: {
           id: 'desc'
         },
         take: limit + 1,
-        cursor: cursor ? { id: cursor } : undefined
+        cursor: cursor ? { id: cursor } : undefined,
+        include: {
+          author: true
+        }
       })
       let nextCursor: number | undefined
       if (posts.length >= limit) {
@@ -42,19 +53,23 @@ export const postsRouter = router({
         nextCursor
       }
     }),
-  getPosts: publicProcedure
+  getPosts: protectProcedure
     .query(async ({ ctx }) => {
       const { prisma } = ctx
       const posts = await prisma.post.findMany({})
       return posts
     }),
-  getPost: publicProcedure.input(getPostSchema)
+  getPost: protectProcedure
+    .input(getPostSchema)
     .query(async ({ input, ctx }) => {
       const { post_id } = input
       const { prisma } = ctx
       const post = await prisma.post.findFirst({
         where: {
           id: Number(post_id)
+        },
+        include: {
+          author: true
         }
       })
       if (!post) {
@@ -63,23 +78,33 @@ export const postsRouter = router({
       return post
     }),
 
-  addPost: publicProcedure
+  addPost: protectProcedure
     .input(createPostSchema)
     .mutation(async ({ input, ctx }) => {
-      const { prisma } = ctx
+      const { prisma, session } = ctx
+      const { title } = input
       const duplicatePost = await prisma.post.findFirst({
         where: {
-          title: input.title
+          title: title
         }
       })
       if (duplicatePost) {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Title already exists' })
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Title already exists' })
       }
+
       const newPost = await prisma.post.create({
-        data: input,
+        data: {
+          title: input.title,
+          content: input.content,
+          author: {
+            connect: {
+              id: session?.user.id
+            }
+          }
+        },
       })
 
-      return { message: 'success create post', post: newPost }
+      return { message: 'success create post' }
     }),
   togglePostPublish: publicProcedure
     .input(togglePostPuPublishedSchema)

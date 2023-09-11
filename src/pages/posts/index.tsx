@@ -1,3 +1,4 @@
+import { Button } from "@/components/Button";
 import { DebounceInput } from "@/components/DebounceInput";
 import { PostForm } from "@/components/PostForm";
 import { SearchInput } from "@/components/SearchInput";
@@ -5,14 +6,24 @@ import { SearchInput } from "@/components/SearchInput";
 
 import { api } from "@/utils/api";
 import { Prisma, Post } from "@prisma/client";
-import { GetServerSidePropsContext } from "next";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AiFillDelete } from "react-icons/ai";
 import { IoIosArchive } from "react-icons/io";
 import { useInView } from 'react-intersection-observer';
+import { toast } from "react-toastify";
 
 export default function Home() {
+
+  const session = useSession({
+    // true 要求這個 component 必須要是 signin 否則處法下面的 onUnauthenticated callback，如果 required 是 true ，但沒有定義 onUnauthenticated 則會執行 signIn()
+    required: true,
+    onUnauthenticated: () => {
+      console.log('onUnauthenticated')
+    }
+  })
+
   const [filterValue, setFilterValue] = useState<string>('')
   const router = useRouter()
   const bottomOfPanelRef = useRef<HTMLDivElement | null>(null)
@@ -57,6 +68,8 @@ export default function Home() {
     fetchNextPage()
   }, [inView])
   const posts = data?.pages.flatMap(page => page.posts) || []
+  const showNoMoreDataText = useMemo(() => !hasNextPage && posts.length > 5, [hasNextPage, posts])
+
 
   const { mutateAsync: togglePost } = api.posts.togglePostPublish.useMutation({
     onSuccess: () => {
@@ -66,16 +79,16 @@ export default function Home() {
   const { mutateAsync: deletePost } = api.posts.deletePost.useMutation({
     onSuccess: () => {
       utils.posts.invalidate()
+      toast.success('success delete post')
     }
   })
   const handelSearchText = (value: string) => {
     setFilterValue(value)
     // console.log(value)
   }
-  if (isError) return error.message
   return (
     <div className="bg-gray-100 min-h-screen overflow-y-auto p-4">
-      <h2 className="text-center text-3xl">Create posts</h2>
+      <h2 className="text-center text-3xl">Create posts ({session.data?.user.name})</h2>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md flex flex-col gap-[2rem]">
         <PostForm updateSuccessCallBack={scrollToBottom} />
         <SearchInput value={filterValue} onChange={handelSearchText} />
@@ -112,9 +125,10 @@ export default function Home() {
               </li>
             ))}
           </ul>
-          {!hasNextPage && <p className="text-gray-500 py-2 text-center">no more data</p>}
+          {showNoMoreDataText && <p className="text-gray-500 py-2 text-center">no more data</p>}
           <div ref={ref} className="invisible"></div>
         </div>
+        <Button type='button' disabled={false} danger onClick={() => signOut()}>sign up</Button>
 
       </div>
 

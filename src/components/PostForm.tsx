@@ -8,24 +8,25 @@ import { Button } from './Button'
 import { TRPCClientError } from '@trpc/client'
 import { queryClient } from './Provider'
 import { date } from 'zod'
+import { toast } from 'react-toastify'
 
 interface PostFormProps {
   updateSuccessCallBack?: () => void
 }
+
 export const PostForm = ({ updateSuccessCallBack }: PostFormProps) => {
   const utils = api.useContext()
   const { mutateAsync: createPost } = api.posts.addPost.useMutation({
-    onSuccess: ({ post: newPost }) => {
+    onSuccess: () => {
       // utils.posts.getPosts.invalidate()
       utils.posts.infinitePosts.refetch()
-      console.log('onSuccess')
       if (updateSuccessCallBack) {
         updateSuccessCallBack()
       }
     },
     onError: (e) => {
       if (e instanceof TRPCClientError) {
-        console.log('TRPCClientError')
+        toast.error(e.message)
       }
     }
   })

@@ -77,7 +77,7 @@ export const api = createTRPCNext<AppRouter>({
           }),
         }),
       ],
-      queryClient
+      queryClient,
     };
   },
   /**

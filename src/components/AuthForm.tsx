@@ -2,18 +2,29 @@ import { LoginFormSchema, RegisterFormSchema, loginFormSchema, registerFormSchem
 import { zodResolver } from '@hookform/resolvers/zod'
 import React, { useMemo, useState } from 'react'
 import { FieldErrors, useForm } from 'react-hook-form'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import { Button } from './Button'
 import { Input } from './Input'
 import { AuthSocialButton } from './AuthSocialButton'
 import { BsGithub, BsGoogle, BsDiscord } from 'react-icons/bs';
+import { RegisterSchema } from '@/pages/api/register'
+import { toast } from 'react-toastify'
+import { signIn, signOut, useSession } from "next-auth/react"
+import { useRouter } from 'next/router'
+
 interface AuthFormProps {
   variants: VARIANTS
   toggleVariants: () => void
 }
-export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
 
+export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
+  const session = useSession()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
+  const formSchemaTypeGuard = (value: LoginFormSchema | RegisterFormSchema): value is RegisterFormSchema => {
+    return value.hasOwnProperty('confirmPassword')
+  }
   const isRegister = useMemo(() => variants === 'Register', [variants])
   const { register, formState: { errors }, handleSubmit } = useForm<LoginFormSchema | RegisterFormSchema>({
     resolver: zodResolver(
@@ -23,13 +34,51 @@ export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
     ),
     mode: 'onChange'
   })
-  const onSubmit = (value: LoginFormSchema) => {
-    console.log(value)
+
+  const onSubmit = async (value: LoginFormSchema | RegisterFormSchema) => {
+    try {
+      setIsLoading(true)
+      if (variants === 'Login') {
+        const callBack = await signIn('credentials', {
+          email: value.email,
+          password: value.password,
+          redirect: false
+        })
+        if (callBack?.error) {
+          toast.error(callBack.error)
+        }
+        if (callBack?.ok) {
+          toast.success('success login')
+          router.push('/posts')
+        }
+      }
+      if (formSchemaTypeGuard(value) && variants === 'Register') {
+        const { message } = await axios.post<{ message: string }, AxiosResponse<{ message: string }>, RegisterSchema>('/api/register', {
+          name: value.name,
+          email: value.email,
+          password: value.password,
+        }).then(res => res.data)
+        toast.success(message)
+
+      }
+    } catch (e) {
+      if (e instanceof AxiosError) {
+        const message = e.response?.data.message
+        toast.error(message)
+        return
+      }
+      console.log(e)
+    } finally {
+      setIsLoading(false)
+
+    }
   }
 
 
   const socialAction = (type: 'discord' | 'google' | 'github') => {
-    console.log(type)
+    signIn('github', {
+      redirect: false
+    })
   }
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

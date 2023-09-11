@@ -5,6 +5,8 @@ import { createServerSideHelpers } from '@trpc/react-query/server';
 import { prisma } from '@/server/db';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/router';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../api/auth/[...nextauth]';
 
 
 interface PostDetailProps extends InferGetStaticPropsType<typeof getServerSideProps> {
@@ -23,19 +25,22 @@ const PostDetail = ({ id }: PostDetailProps) => {
     <>
       <h1>Post details Page</h1>
       <p>title : {post.title}</p>
+      <p>Author: {post.author.name}</p>
       <p>id : {post.id}</p>
       <p>content : {post.content}</p>
-      <button onClick={() => router.push('/posts')}>back to home</button>
+      <button onClick={() => router.push('/posts')}>back to post lists</button>
     </>
   )
 }
 export async function getServerSideProps(
   context: GetServerSidePropsContext<{ id: string }>,
 ) {
+  const session = await getServerSession(context.req, context.res, authOptions)
   const helpers = createServerSideHelpers({
     router: appRouter,
     ctx: {
-      prisma
+      prisma,
+      session
     },
   });
   // const id = context.params?.id as string;
