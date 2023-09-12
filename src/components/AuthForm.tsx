@@ -10,7 +10,11 @@ import { BsGithub, BsGoogle, BsDiscord } from 'react-icons/bs';
 import { RegisterSchema } from '@/pages/api/register'
 import { toast } from 'react-toastify'
 import { signIn, signOut, useSession } from "next-auth/react"
+
+
+
 import { useRouter } from 'next/router'
+
 
 interface AuthFormProps {
   variants: VARIANTS
@@ -18,7 +22,18 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
-  const session = useSession()
+  const route = useRouter()
+  const session = useSession({
+    required: true,
+    onUnauthenticated() {
+      if (
+        route.query.error &&
+        route.query.error === 'OAuthAccountNotLinked'
+      ) {
+        toast.error('此 email 已經註冊過，無法登入第三方，請使用原先 email 登入方式登入')
+      }
+    },
+  })
   const router = useRouter()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -35,22 +50,27 @@ export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
     mode: 'onChange'
   })
 
+  const handleSignCredentials = async (value: LoginFormSchema | RegisterFormSchema) => {
+    const callBack = await signIn('credentials', {
+      email: value.email,
+      password: value.password,
+      redirect: false
+    })
+    if (callBack?.error) {
+      toast(callBack.error)
+    }
+    if (callBack?.ok) {
+      toast.success('success login')
+      router.push('/posts')
+    }
+  }
+
+
   const onSubmit = async (value: LoginFormSchema | RegisterFormSchema) => {
     try {
       setIsLoading(true)
       if (variants === 'Login') {
-        const callBack = await signIn('credentials', {
-          email: value.email,
-          password: value.password,
-          redirect: false
-        })
-        if (callBack?.error) {
-          toast.error(callBack.error)
-        }
-        if (callBack?.ok) {
-          toast.success('success login')
-          router.push('/posts')
-        }
+        handleSignCredentials(value)
       }
       if (formSchemaTypeGuard(value) && variants === 'Register') {
         const { message } = await axios.post<{ message: string }, AxiosResponse<{ message: string }>, RegisterSchema>('/api/register', {
@@ -59,7 +79,7 @@ export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
           password: value.password,
         }).then(res => res.data)
         toast.success(message)
-
+        handleSignCredentials(value)
       }
     } catch (e) {
       if (e instanceof AxiosError) {
@@ -74,11 +94,25 @@ export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
     }
   }
 
+  const socialAction = async (type: 'discord' | 'google' | 'github') => {
+    try {
 
-  const socialAction = (type: 'discord' | 'google' | 'github') => {
-    signIn('github', {
-      redirect: false
-    })
+      setIsLoading(true)
+      const callBack = await signIn(type, {
+        redirect: false
+      })
+      if (callBack?.error) {
+        toast.error(callBack.error)
+      }
+      if (callBack?.ok) {
+        toast.success('success login')
+        router.push('/posts')
+      }
+    } catch (e) {
+      console.log(e)
+    } finally {
+      setIsLoading(false)
+    }
   }
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

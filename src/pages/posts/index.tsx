@@ -128,7 +128,7 @@ export default function Home() {
           {showNoMoreDataText && <p className="text-gray-500 py-2 text-center">no more data</p>}
           <div ref={ref} className="invisible"></div>
         </div>
-        <Button type='button' disabled={false} danger onClick={() => signOut()}>sign up</Button>
+        <Button type='button' disabled={false} danger onClick={() => signOut()}>sign out</Button>
 
       </div>
 
