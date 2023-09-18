@@ -54,7 +54,7 @@ export async function getServerSideProps(
 
   return {
     props: {
-      trpcState: JSON.parse(JSON.stringify(helpers.dehydrate())),
+      trpcState: helpers.dehydrate(),
       id,
     }
   };

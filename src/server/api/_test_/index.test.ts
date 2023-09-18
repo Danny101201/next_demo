@@ -1,12 +1,7 @@
-
-import { beforeEach, describe, expect, it } from "vitest";
-import { prisma } from "@/server/db";
 import { AppRouter, appRouter } from "../root";
 import { inferProcedureInput } from "@trpc/server";
 import { createInnerTRPCContext } from "../trpc";
 import { prismaMock } from "@/server/__mocks__/prisma";
-import { Post, Prisma } from "@prisma/client";
-import { Session } from "next-auth";
 import { faker } from '@faker-js/faker'
 
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectProcedure, publicProcedure, router } from "./trpc";
+import { authProcedure, publicProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 
 import {
@@ -12,73 +12,88 @@ import {
 import { Prisma } from "@prisma/client";
 
 export const postsRouter = router({
-  infinitePosts: protectProcedure
-    .input(getInfinitePostSchema)
-    .query(async ({ input, ctx }) => {
-      const { cursor, where } = input
-      const { prisma } = ctx
-      const limit = input.limit ?? 50
-      const whereClause = Prisma.validator<Prisma.PostWhereInput>()({
-        OR: [
-          {
-            title: {
-              contains: where?.title
+  infinitePosts:
+    authProcedure
+      .meta({
+        authRequired: true
+      })
+      .input(getInfinitePostSchema)
+      .query(async ({ input, ctx }) => {
+        const { cursor, where } = input
+        const { prisma } = ctx
+        const limit = input.limit ?? 50
+        const whereClause = Prisma.validator<Prisma.PostWhereInput>()({
+          OR: [
+            {
+              title: {
+                contains: where?.title
+              }
+            },
+            {
+              content: {
+                contains: where?.content
+              }
             }
+          ]
+        })
+        const posts = await prisma.post.findMany({
+          where: where ? whereClause : undefined,
+          orderBy: {
+            id: 'desc'
           },
-          {
-            content: {
-              contains: where?.content
-            }
+          take: limit + 1,
+          cursor: cursor ? { id: cursor } : undefined,
+          include: {
+            author: true
           }
-        ]
-      })
-      const posts = await prisma.post.findMany({
-        where: where ? whereClause : undefined,
-        orderBy: {
-          id: 'desc'
-        },
-        take: limit + 1,
-        cursor: cursor ? { id: cursor } : undefined,
-        include: {
-          author: true
+        })
+        let nextCursor: number | undefined
+        if (posts.length >= limit) {
+          nextCursor = posts.pop()?.id
         }
-      })
-      let nextCursor: number | undefined
-      if (posts.length >= limit) {
-        nextCursor = posts.pop()?.id
-      }
 
-      return {
-        posts,
-        nextCursor
-      }
-    }),
-  getPosts: protectProcedure
-    .query(async ({ ctx }) => {
-      const { prisma } = ctx
-      const posts = await prisma.post.findMany({})
-      return posts
-    }),
-  getPost: protectProcedure
-    .input(getPostSchema)
-    .query(async ({ input, ctx }) => {
-      const { post_id } = input
-      const { prisma } = ctx
-      const post = await prisma.post.findFirst({
-        where: {
-          id: Number(post_id)
-        },
-        include: {
-          author: true
+        return {
+          posts,
+          nextCursor
         }
+      }),
+  getPosts:
+    authProcedure
+      .meta({
+        authRequired: true
       })
-      if (!post) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'post not found' })
-      }
-      return post
-    }),
+      .query(async ({ ctx }) => {
+        const { prisma } = ctx
+        const posts = await prisma.post.findMany({})
+        return posts
+      }),
+  getPost:
+    authProcedure
+      .meta({
+        authRequired: true
+      })
+      .input(getPostSchema)
+      .query(async ({ input, ctx }) => {
+        const { post_id } = input
+        const { prisma } = ctx
+        const post = await prisma.post.findFirst({
+          where: {
+            id: Number(post_id)
+          },
+          include: {
+            author: true
+          }
+        })
+        if (!post) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'post not found' })
+        }
+        return post
+      }),
 
-  addPost: protectProcedure
+  addPost: authProcedure
+    .meta({
+      authRequired: true
+    })
     .input(createPostSchema)
     .mutation(async ({ input, ctx }) => {
       const { prisma, session } = ctx
@@ -98,7 +113,7 @@ export const postsRouter = router({
           content: input.content,
           author: {
             connect: {
-              id: session?.user.id
+              id: session?.user?.id
             }
           }
         },
@@ -106,32 +121,40 @@ export const postsRouter = router({
 
       return { message: 'success create post', id: newPost.id }
     }),
-  togglePostPublish: publicProcedure
-    .input(togglePostPuPublishedSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { id, published } = input
-      const { prisma } = ctx
-      const result = await prisma.post.update({
-        where: {
-          id
-        },
-        data: {
-          published
-        }
+  togglePostPublish:
+    authProcedure
+      .meta({
+        authRequired: true
       })
+      .input(togglePostPuPublishedSchema)
+      .mutation(async ({ input, ctx }) => {
+        const { id, published } = input
+        const { prisma } = ctx
+        const result = await prisma.post.update({
+          where: {
+            id
+          },
+          data: {
+            published
+          }
+        })
 
-      return { message: 'success update post', id: result.id }
-    }),
-  deletePost: publicProcedure
-    .input(deletePostSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { id } = input
-      const { prisma } = ctx
-      const result = await prisma.post.delete({
-        where: {
-          id
-        }
+        return { message: 'success update post', id: result.id }
+      }),
+  deletePost:
+    authProcedure
+      .meta({
+        authRequired: true
       })
-      return { message: 'success delete post', id: result.id }
-    })
+      .input(deletePostSchema)
+      .mutation(async ({ input, ctx }) => {
+        const { id } = input
+        const { prisma } = ctx
+        const result = await prisma.post.delete({
+          where: {
+            id
+          }
+        })
+        return { message: 'success delete post', id: result.id }
+      })
 })

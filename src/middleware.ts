@@ -12,7 +12,7 @@ export default withAuth(
     // // auth 
     const token = await getToken({ req: request })
     const isAuth = !!token
-
+    console.log(isAuth)
     const sensitiveRoutes = ['/posts']
     if (isAuth && !sensitiveRoutes.some(route => pathName.startsWith(route))) return NextResponse.redirect(new URL('/posts', request.url))
     if (!isAuth && sensitiveRoutes.some(route => pathName.startsWith(route))) return NextResponse.redirect(new URL('/', request.url))

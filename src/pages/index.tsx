@@ -1,11 +1,14 @@
 import { AuthForm } from '@/components/AuthForm'
 import { getServerSession } from 'next-auth'
 import Image from 'next/image'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { authOptions } from './api/auth/[...nextauth]'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 function AuthPage() {
   const [variants, setVariants] = useState<VARIANTS>('Login')
+  // const [variants, setVariants, removeValue] = useLocalStorage<VARIANTS>({ key: 'Login_key', initialValue: 'Register' })
+  console.log(variants)
   const toggleVariants = () => {
     if (variants === 'Login') setVariants('Register')
     if (variants === 'Register') setVariants('Login')

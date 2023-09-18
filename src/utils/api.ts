@@ -34,6 +34,7 @@ export const api = createTRPCNext<AppRouter>({
   // },
   config(opts) {
     return {
+      abortOnUnmount: true,
       links: [
         loggerLink({
           enabled: (opts) =>
