@@ -23,6 +23,7 @@ export const PostForm = ({ updateSuccessCallBack }: PostFormProps) => {
       if (updateSuccessCallBack) {
         updateSuccessCallBack()
       }
+      toast.success('success create post')
     },
     onError: (e) => {
       if (e instanceof TRPCClientError) {

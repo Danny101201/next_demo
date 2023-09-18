@@ -1,6 +1,6 @@
 import { LoginFormSchema, RegisterFormSchema, loginFormSchema, registerFormSchema } from '@/validate/auth'
 import { zodResolver } from '@hookform/resolvers/zod'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { FieldErrors, useForm } from 'react-hook-form'
 import axios, { AxiosError, AxiosResponse } from 'axios'
 import { Button } from './Button'
@@ -31,9 +31,11 @@ export const AuthForm = ({ variants, toggleVariants }: AuthFormProps) => {
         route.query.error === 'OAuthAccountNotLinked'
       ) {
         toast.error('此 email 已經註冊過，無法登入第三方，請使用原先 email 登入方式登入')
+        route.replace('/')
       }
     },
   })
+  // console.log(session)
   const router = useRouter()
   const [isLoading, setIsLoading] = useState<boolean>(false)
 

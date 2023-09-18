@@ -20,5 +20,8 @@ const config: Config = {
       // strategy: 'class', // only generate classes
     }),
   ],
+  blocklist: [
+    'container'
+  ]
 }
 export default config

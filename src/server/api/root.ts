@@ -1,8 +1,6 @@
 import * as trpc from '@trpc/server';
 import { publicProcedure, router } from './trpc';
 import { z } from 'zod';
-import { TRPCError, initTRPC } from '@trpc/server';
-import { CreateNextContextOptions } from '@trpc/server/adapters/next';
 import { postsRouter } from './post';
 
 export const appRouter = router({
@@ -10,7 +8,7 @@ export const appRouter = router({
     .input(z.object({
       name: z.string()
     }))
-    .query(({ input, ctx }) => `hello ${input.name} `),
+    .query(({ input, ctx }) => `hello ${input.name}`),
   posts: postsRouter
 });
 

@@ -23,7 +23,6 @@ export default function Home() {
       console.log('onUnauthenticated')
     }
   })
-
   const [filterValue, setFilterValue] = useState<string>('')
   const router = useRouter()
   const bottomOfPanelRef = useRef<HTMLDivElement | null>(null)
@@ -62,7 +61,7 @@ export default function Home() {
       }
     }
   )
-
+  console.log(error)
   useEffect(() => {
     if (!inView) return
     fetchNextPage()
@@ -86,8 +85,14 @@ export default function Home() {
     setFilterValue(value)
     // console.log(value)
   }
+  const [windowHeight, setWindowHeight] = useState('100px')
   return (
     <div className="bg-gray-100 min-h-screen overflow-y-auto p-4">
+      <div className="text-lg leading-8 text-gray-600">
+        Every custom pool we design starts as a used shipping container, and is
+        retrofitted with state of the art technology and finishes to turn it into
+        a beautiful and functional way to entertain your guests all summer long.
+      </div>
       <h2 className="text-center text-3xl">Create posts ({session.data?.user.name})</h2>
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md flex flex-col gap-[2rem]">
         <PostForm updateSuccessCallBack={scrollToBottom} />

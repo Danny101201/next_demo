@@ -104,14 +104,14 @@ export const postsRouter = router({
         },
       })
 
-      return { message: 'success create post' }
+      return { message: 'success create post', id: newPost.id }
     }),
   togglePostPublish: publicProcedure
     .input(togglePostPuPublishedSchema)
     .mutation(async ({ input, ctx }) => {
       const { id, published } = input
       const { prisma } = ctx
-      await prisma.post.update({
+      const result = await prisma.post.update({
         where: {
           id
         },
@@ -119,17 +119,19 @@ export const postsRouter = router({
           published
         }
       })
+
+      return { message: 'success update post', id: result.id }
     }),
   deletePost: publicProcedure
     .input(deletePostSchema)
     .mutation(async ({ input, ctx }) => {
       const { id } = input
       const { prisma } = ctx
-      await prisma.post.delete({
+      const result = await prisma.post.delete({
         where: {
           id
         }
       })
-
+      return { message: 'success delete post', id: result.id }
     })
 })

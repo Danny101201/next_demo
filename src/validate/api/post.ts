@@ -18,7 +18,7 @@ export type GetPostSchema = z.infer<typeof getPostSchema>
 
 export const createPostSchema = z.object({
   title: z.string().min(1, { message: 'title required' }),
-  content: z.string().optional(),
+  content: z.string().optional().nullable(),
   published: z.boolean().default(false)
 })
 export type CreatePostSchema = z.infer<typeof createPostSchema>

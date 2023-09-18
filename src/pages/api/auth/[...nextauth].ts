@@ -4,6 +4,9 @@ import GithubProvider from "next-auth/providers/github"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/server/db"
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+import { JWT } from "next-auth/jwt"
+
 export const authOptions: AuthOptions = {
   pages: { signIn: '/' },
   adapter: PrismaAdapter(prisma),
@@ -50,6 +53,7 @@ export const authOptions: AuthOptions = {
 
     // ...add more providers here
   ],
+  // 如果有 NEXTAUTH_SECRET env ， next-auth 會自動去讀取，而 secret 就不需要特定去設定，如果用別他env name 除了在 authOptions 要引入外，middleware 也要記得。
   secret: process.env.AUTH_SECRET,
   callbacks: {
     async jwt({ token, user, account, profile, isNewUser }) {
@@ -62,13 +66,13 @@ export const authOptions: AuthOptions = {
       if (!userInfo) return token
       return { ...token, ...userInfo }
     },
-    session({ session, token }) {
-      return { ...session, user: { ...session.user, id: token.id } }
+    async session({ session, token }) {
+      return { ...session, user: { ...session.user, id: token.id, token } }
     },
   },
   session: {
     strategy: 'jwt',
-    // maxAge: 1 * 24 * 60 * 60
+    maxAge: 1 * 24 * 60 * 60
   }
   // No adapter, strategy: "jwt": This is the default.The session is saved in a cookie and never persisted anywhere.
   // With Adapter, strategy: "database": If an Adapter is defined, this will be the implicit setting.No user config is needed.

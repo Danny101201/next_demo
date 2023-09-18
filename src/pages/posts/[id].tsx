@@ -7,6 +7,8 @@ import { api } from '@/utils/api';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../api/auth/[...nextauth]';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/Button';
 
 
 interface PostDetailProps extends InferGetStaticPropsType<typeof getServerSideProps> {
@@ -15,6 +17,7 @@ interface PostDetailProps extends InferGetStaticPropsType<typeof getServerSidePr
 
 
 const PostDetail = ({ id }: PostDetailProps) => {
+  const { update, data: session } = useSession()
   const router = useRouter()
 
   const { data: post, status, ...rest } = api.posts.getPost.useQuery({ post_id: id })
@@ -23,6 +26,8 @@ const PostDetail = ({ id }: PostDetailProps) => {
   }
   return (
     <>
+      <pre>{JSON.stringify(session, null, 2)}</pre>
+      <Button danger onClick={() => update()}>update</Button>
       <h1>Post details Page</h1>
       <p>title : {post.title}</p>
       <p>Author: {post.author.name}</p>
